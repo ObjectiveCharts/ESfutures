@@ -1,8 +1,9 @@
 # Uncommon Christian Network — Initial Plan Overview
 
 **Product:** [Uncommon Christian Network (UCN)](https://uncommonchristiannetwork.com/)  
-**Repo today:** [ObjectiveCharts/ESfutures](https://github.com/ObjectiveCharts/ESfutures) (greenfield; name is legacy)  
-**Status:** Planning — ES futures is out of scope  
+**Intended code home:** **New private GitHub repo** dedicated to UCN (not this public `ESfutures` repo)  
+**Repo today (temporary):** [ObjectiveCharts/ESfutures](https://github.com/ObjectiveCharts/ESfutures) — planning only; do not ship UCN product code here  
+**Status:** Planning — awaiting private UCN repo creation  
 
 ---
 
@@ -10,7 +11,29 @@
 
 Build and maintain the digital home for **Uncommon Christian Network**: a worldwide prayer community and 24/7 English-speaking Christian radio station. Listeners hear talk and music live, leave prayer requests by voice or text for a real prayer team, and find shortwave / podcast distribution — **always free, never gated**.
 
-This repo should become the engineering source of truth for the UCN web experience (and related services), replacing ad-hoc site work with a maintainable product codebase.
+**Engineering home:** a **new private GitHub repository** for UCN. This public `ObjectiveCharts/ESfutures` repo is the wrong place for that work (wrong name, wrong visibility, wrong org signal). Create the private repo first, then move planning + implementation there.
+
+### Create the private repo (owner action)
+
+This Cloud Agent cannot create GitHub repositories (`gh` is read-only here). Please create one on GitHub, then reconnect the agent to it.
+
+Suggested settings:
+
+| Field | Suggestion |
+|---|---|
+| Owner | Your user or a UCN org (not required to stay under `ObjectiveCharts`) |
+| Repository name | `uncommon-christian-network` or `ucn-web` |
+| Visibility | **Private** |
+| Initialize | Add a README (optional); leave empty if the agent will scaffold |
+| Description | `Uncommon Christian Network — web, prayer, and radio` |
+
+After it exists:
+
+1. Invite any collaborators / the Cursor GitHub App if needed  
+2. Open a new Cloud Agent run **on that private repo** (or add it to the environment)  
+3. Point the agent at `PLAN.md` / “continue UCN Phase 0”  
+
+Until then, keep UCN product code out of `ESfutures`.
 
 ---
 
@@ -100,7 +123,8 @@ Already public at `uncommonchristiannetwork.com`:
 
 ### Phase 0 — Foundations
 
-- [ ] Confirm this repo is the UCN codebase (rename GitHub repo/org if desired)  
+- [ ] **Create private GitHub repo for UCN** (owner; agent cannot create repos)  
+- [ ] Move/copy this plan into the private repo and continue work there  
 - [ ] Capture brand tokens (colors, type, voice, logo usage) from current site  
 - [ ] Inventory current stack: stream URL, prayer pipeline, giving links, CMS/host  
 - [ ] Scaffold Next.js app + CI (lint, typecheck, preview deploys)  
@@ -144,7 +168,7 @@ Already public at `uncommonchristiannetwork.com`:
 | Prayer delivery channel | Phase 2 | Email, SMS, Twilio, or existing team process |
 | Donor platform credentials/links | Phase 3 | Prefer keep existing processor |
 | Brand assets | Phase 0–1 | Logo, wordmark, imagery rights |
-| Repo/org naming | Phase 0 | `ESfutures` / `ObjectiveCharts` are mismatched |
+| Private UCN GitHub repo | Phase 0 | **Blocker** — create privately; do not ship in `ESfutures` |
 
 ---
 
@@ -165,11 +189,13 @@ Already public at `uncommonchristiannetwork.com`:
 1. **Is this a rebuild of `uncommonchristiannetwork.com` or a new companion app?**  
 2. **Who operates prayer requests today, and what tool should v1 deliver into?**  
 3. **Preferred giving platform** (keep current vs Stripe/Donorbox/etc.)?  
-4. **Should the GitHub repo/org be renamed** to match UCN?  
+4. **Private repo owner/name** — personal account vs UCN org; final slug?  
 5. **Content ownership** — who updates schedule and library week to week?
 
 ---
 
 ## Suggested next step
 
-Confirm the open decisions (especially rebuild vs companion, and prayer pipeline). Then implement **Phase 0 + Phase 1**: scaffold the app, wire the live player to the real stream, and replace schedule placeholders with real data.
+1. **You:** create the private GitHub repo for UCN (see table above).  
+2. **You:** start a new agent run on that private repo.  
+3. **Agent:** implement **Phase 0 + Phase 1** there (scaffold, live player, real schedule data).
