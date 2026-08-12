@@ -1,201 +1,265 @@
-# Uncommon Christian Network — Initial Plan Overview
+# Uncommon Christian Network — Rewrite Plan
 
 **Product:** [Uncommon Christian Network (UCN)](https://uncommonchristiannetwork.com/)  
-**Intended code home:** **New private GitHub repo** dedicated to UCN (not this public `ESfutures` repo)  
-**Repo today (temporary):** [ObjectiveCharts/ESfutures](https://github.com/ObjectiveCharts/ESfutures) — planning only; do not ship UCN product code here  
-**Status:** Planning — awaiting private UCN repo creation  
+**Approach:** Complete rewrite in a **new codebase** — fresh folders and files  
+**Hard rule:** Do **not** change the current live site or its deploy  
+**Build method:** Cursor + agents + markdown files as the source of truth  
 
 ---
 
-## Overview
+## 1. Goal
 
-Build and maintain the digital home for **Uncommon Christian Network**: a worldwide prayer community and 24/7 English-speaking Christian radio station. Listeners hear talk and music live, leave prayer requests by voice or text for a real prayer team, and find shortwave / podcast distribution — **always free, never gated**.
+Rebuild UCN (site + apps) the right way in a clean repo, while the existing site keeps running unchanged. Ship the rewrite only when it is ready to cut over (or keep them side-by-side as long as needed).
 
-**Engineering home:** a **new private GitHub repository** for UCN. This public `ObjectiveCharts/ESfutures` repo is the wrong place for that work (wrong name, wrong visibility, wrong org signal). Create the private repo first, then move planning + implementation there.
-
-### Create the private repo (owner action)
-
-This Cloud Agent cannot create GitHub repositories (`gh` is read-only here). Please create one on GitHub, then reconnect the agent to it.
-
-Suggested settings:
-
-| Field | Suggestion |
+| Keep running | Build separately |
 |---|---|
-| Owner | Your user or a UCN org (not required to stay under `ObjectiveCharts`) |
-| Repository name | `uncommon-christian-network` or `ucn-web` |
-| Visibility | **Private** |
-| Initialize | Add a README (optional); leave empty if the agent will scaffold |
-| Description | `Uncommon Christian Network — web, prayer, and radio` |
-
-After it exists:
-
-1. Invite any collaborators / the Cursor GitHub App if needed  
-2. Open a new Cloud Agent run **on that private repo** (or add it to the environment)  
-3. Point the agent at `PLAN.md` / “continue UCN Phase 0”  
-
-Until then, keep UCN product code out of `ESfutures`.
+| Current `uncommonchristiannetwork.com` | New private UCN repo (create later) |
+| Current stream, prayer, give links | Fresh Next.js (or chosen) app from empty folders |
+| Current hosting / DNS | Preview deploys only until cutover |
 
 ---
 
-## Product thesis
+## 2. Why markdown-first (and why dropping chat memory is fine)
 
-| Principle | Meaning |
-|---|---|
-| Access first | No paywall, no login wall, no member-only prayer |
-| Prayer + radio | Two pillars: live signal and human prayer response |
-| Reach beyond the net | Streaming, directories, apps, shortwave — one network |
-| Adult faith | Honest, grown-up conversation — not children’s programming |
-| Support without gating | Giving funds the mission; listening stays free |
+Long agent chats rot: graphics briefs get lost, brand rules drift, and later agents invent context. **Markdown files should be the memory** — not the conversation.
 
-### Primary audiences
+**Recommended workflow**
 
-1. **Listeners** — adults seeking live Christian radio / on-demand teaching  
-2. **Prayer requesters** — people who need a real team to pray with them  
-3. **Supporters** — donors funding airtime, streaming, and programming  
-4. **Operators** — prayer team and producers managing requests and schedule  
+1. Write / update an MD file (spec, prompt, or checklist)  
+2. Start a **fresh** Cursor agent with little or no prior chat  
+3. Point it at that file: “Implement `docs/prompts/01-listen-player.md` exactly”  
+4. Agent commits; you review; update the MD if the truth changed  
+5. Next task → new chat → next MD  
 
-### v1 success look
+Chat is disposable. **Repo docs are durable.**
 
-A production-ready UCN site where someone can, in one visit:
-
-1. Hear **live radio** with clear now-playing / schedule context  
-2. Submit a **prayer request** (text and/or voicemail)  
-3. Browse **podcasts / on-demand** teaching  
-4. **Give** (one-time, monthly, shortwave) without friction  
-5. Discover **where else to listen** (directories, apps, smart devices)  
+What to stop doing: pasting huge history into new chats and hoping the model “remembers” brand, layout, or image style.
 
 ---
 
-## Current surface (from live site)
+## 3. Repo layout (greenfield)
 
-Already public at `uncommonchristiannetwork.com`:
+Create this structure in the **new private repo** (not in public `ESfutures`):
 
-- Hero + brand (“Where faith finds a voice”)  
-- Live player (“Uncommon Radio” 24/7)  
-- Schedule / library placeholders  
-- Prayer network messaging  
-- App / directory distribution (30+ outlets)  
-- Support / give flows (monthly, one-time, shortwave)  
-
-**Implication:** This plan is not inventing a new ministry — it is hardening, rebuilding, or extending an existing product into this repository with clear architecture and ownership.
-
----
-
-## Technical approach (proposal)
-
-| Layer | Choice | Why |
-|---|---|---|
-| Web | Next.js (App Router) + TypeScript | Fast, SEO-friendly ministry site + app shell |
-| Styling | CSS variables + purposeful type | Brand-led, non-generic UI |
-| Audio | HLS/Icecast (or current stream URL) + custom player UI | Live radio is the core loop |
-| Prayer intake | Form + optional Twilio/voice mail webhook | Text + voicemail → operator queue |
-| CMS | Headless (Sanity / Notion / MDX) for shows, episodes, pages | Non-devs can update schedule/content |
-| Giving | Existing processor (Stripe / donor platform) via deep links or embed | Don’t reinvent payments in v1 |
-| Hosting | Vercel (web) + small API/worker for prayer webhooks | Simple ops |
-
-### Core domains
-
-```
-┌──────────────┐   ┌─────────────────┐   ┌──────────────────┐
-│ Stream /     │   │ Prayer intake   │   │ Content CMS      │
-│ schedule API │   │ (text + voice)  │   │ (shows/episodes) │
-└──────┬───────┘   └────────┬────────┘   └────────┬─────────┘
-       │                    │                     │
-       └────────────────────┼─────────────────────┘
-                            ▼
-                 ┌──────────────────────┐
-                 │ UCN Web (Next.js)    │
-                 │ listen · pray · give │
-                 └──────────────────────┘
+```text
+ucn/                          # private repo root
+├── README.md                 # how to run + how agents should work
+├── AGENTS.md                 # standing rules for every Cursor agent
+├── PLAN.md                   # this plan (living)
+├── docs/
+│   ├── product/
+│   │   ├── vision.md         # mission, audience, non-goals
+│   │   ├── information-architecture.md
+│   │   └── cutover.md        # when/how to replace the live site
+│   ├── brand/
+│   │   ├── voice.md          # tone, words to use/avoid
+│   │   ├── visual.md         # colors, type, motion, layout rules
+│   │   ├── graphics-brief.md # how to generate images (see §6)
+│   │   └── references/       # logos, approved screenshots, mood refs
+│   ├── inventory/
+│   │   └── current-site.md   # what exists today (URLs, stream, give, apps)
+│   ├── specs/                # one feature = one spec
+│   │   ├── listen-player.md
+│   │   ├── prayer.md
+│   │   ├── give.md
+│   │   ├── schedule.md
+│   │   └── apps-directories.md
+│   └── prompts/              # copy-paste agent starter prompts
+│       ├── 00-scaffold.md
+│       ├── 01-listen-player.md
+│       ├── 02-prayer-form.md
+│       └── ...
+├── apps/
+│   └── web/                  # new site (empty until scaffold)
+├── packages/                 # optional shared UI/tokens later
+└── .cursor/
+    └── rules/                # short always-on rules mirroring AGENTS.md
 ```
 
-### Non-goals for v1
-
-- Building a full custom radio automation suite (use existing stream)  
-- Social network / member forums  
-- Paywalled content or accounts required to listen/pray  
-- Native iOS/Android apps (directory distribution first; native later)  
-- Replacing shortwave operations systems  
+**Principle:** one job per MD. Agents implement specs; they do not invent product.
 
 ---
 
-## Phases
+## 4. AGENTS.md (standing rules)
 
-### Phase 0 — Foundations
+Every agent run should obey something like this (full text lives in-repo):
 
-- [ ] **Create private GitHub repo for UCN** (owner; agent cannot create repos)  
-- [ ] Move/copy this plan into the private repo and continue work there  
-- [ ] Capture brand tokens (colors, type, voice, logo usage) from current site  
-- [ ] Inventory current stack: stream URL, prayer pipeline, giving links, CMS/host  
-- [ ] Scaffold Next.js app + CI (lint, typecheck, preview deploys)  
-- [ ] README: local run, env vars, content workflow  
-
-### Phase 1 — Listen (MVP)
-
-- [ ] Full-bleed brand hero with one clear CTA (Listen / Pray)  
-- [ ] Reliable live player (play/pause, status, now playing when available)  
-- [ ] Schedule section fed by real data (not “Loading the schedule…”)  
-- [ ] On-demand / podcast library entry points  
-- [ ] Mobile-first player that works in background where the browser allows  
-
-### Phase 2 — Pray
-
-- [ ] Prayer request form (name optional, request text, consent/privacy copy)  
-- [ ] Voicemail or “call/text the prayer team” path wired to real operators  
-- [ ] Confirmation UX + spam protection  
-- [ ] Simple operator inbox (email, Slack, or lightweight admin)  
-
-### Phase 3 — Support & distribute
-
-- [ ] Give flows: monthly, one-time, shortwave — clear copy, working checkout  
-- [ ] “Listen on apps / directories” page with maintained link list  
-- [ ] Shareable show/episode URLs for podcasts and teaching  
-
-### Phase 4 — Operate & grow
-
-- [ ] CMS for schedule, shows, testimonies, pages  
-- [ ] Analytics that respect privacy (listen starts, prayer submits, give clicks)  
-- [ ] Performance / accessibility pass  
-- [ ] Optional: PWA “install” experience before native apps  
+- Do not touch production / current live site deploy  
+- Only change files under this rewrite repo  
+- Read `docs/brand/*` before any UI or image work  
+- Implement only the linked spec/prompt; do not expand scope  
+- Prefer small PRs: one phase or one feature  
+- After UI work, update the spec if behavior changed  
+- Never commit secrets (stream keys, Twilio, donor tokens)  
 
 ---
 
-## Dependencies
+## 5. Build phases (rewrite only)
 
-| Dependency | Needed for | Notes |
+### Phase 0 — Docs & inventory (no app yet)
+
+- [ ] Create private GitHub repo for UCN  
+- [ ] Add `AGENTS.md`, `PLAN.md`, `docs/**` skeleton  
+- [ ] Fill `docs/inventory/current-site.md` (stream URL, prayer path, give links, directories)  
+- [ ] Fill brand docs from the live site (observe only — do not edit live)  
+- [ ] Write `docs/prompts/00-scaffold.md`  
+
+### Phase 1 — Scaffold fresh app
+
+- [ ] New agent + `00-scaffold.md` → empty `apps/web` Next.js + TypeScript  
+- [ ] Design tokens from `docs/brand/visual.md`  
+- [ ] Preview deploy (Vercel preview) — **not** production DNS  
+- [ ] README: local run + “how to run an agent task”  
+
+### Phase 2 — Listen
+
+- [ ] Spec + prompt for live player, schedule, on-demand entry  
+- [ ] Wire to **existing** stream endpoint (read-only use of current media)  
+- [ ] Mobile-first player UX  
+
+### Phase 3 — Pray
+
+- [ ] Spec for text + voicemail paths  
+- [ ] Deliver into current operator channel (email/SMS/Twilio) without changing live site forms  
+
+### Phase 4 — Give & distribute
+
+- [ ] Deep-link or embed **existing** giving processors  
+- [ ] Apps / directories page from maintained MD list  
+
+### Phase 5 — Content system
+
+- [ ] CMS or MDX for schedule, shows, testimonies  
+- [ ] Operators can update without redeploying code when possible  
+
+### Phase 6 — Cutover (only when ready)
+
+- [ ] Follow `docs/product/cutover.md`  
+- [ ] Point DNS / hosting to the rewrite  
+- [ ] Keep a rollback path to the old site  
+
+Until Phase 6, the **current site stays exactly as it is**.
+
+---
+
+## 6. Graphics & visual context (fix the pain point)
+
+Problem: agents generate random graphics because brand lives in chat, not files.
+
+**Fix: brief files + references, not conversation memory.**
+
+### `docs/brand/graphics-brief.md` should define
+
+- Purpose of each image (hero atmosphere, prayer, radio, give — not decorative noise)  
+- Style: photography vs illustration, lighting, color limits  
+- Hard bans (generic stock church clichés, purple AI glow, emoji, etc. if you don’t want them)  
+- Aspect ratios needed (hero 16:9, app icons, OG share image)  
+- “Must include / must not include” checklist  
+
+### `docs/brand/references/`
+
+- Logo SVG/PNG  
+- 3–6 approved stills or screenshots from the current site  
+- Optional mood references  
+
+### Agent pattern for images
+
+1. Fresh chat  
+2. Prompt: “Read `docs/brand/graphics-brief.md` and `docs/brand/visual.md`. Generate only the asset listed in section X. Save to `apps/web/public/...`.”  
+3. Attach reference images from `docs/brand/references/` when the tool supports it  
+4. Accept or reject; if reject, **edit the brief**, don’t argue in chat  
+
+For layout/UI, prefer **code + CSS tokens** over generated marketing collage art. Use generated imagery only where the brief says a real visual anchor is required.
+
+---
+
+## 7. How to run Cursor day-to-day
+
+| Step | You do | Agent does |
 |---|---|---|
-| Live stream endpoint + CORS/HTTPS | Phase 1 | Must be stable and documented |
-| Prayer delivery channel | Phase 2 | Email, SMS, Twilio, or existing team process |
-| Donor platform credentials/links | Phase 3 | Prefer keep existing processor |
-| Brand assets | Phase 0–1 | Logo, wordmark, imagery rights |
-| Private UCN GitHub repo | Phase 0 | **Blocker** — create privately; do not ship in `ESfutures` |
+| 1 | Pick next unchecked item in `PLAN.md` / a prompt file | — |
+| 2 | Open **new** agent chat (clear context) | — |
+| 3 | Paste only: “Follow `docs/prompts/0N-….md`. Read linked brand/spec files. Commit on a branch.” | Implements that slice |
+| 4 | Review PR / diff | — |
+| 5 | Update MD if truth changed | Optional follow-up: “Update the spec to match what shipped” |
+
+### Prompt file template (`docs/prompts/NN-name.md`)
+
+```markdown
+# Task: <short name>
+
+## Read first
+- AGENTS.md
+- docs/brand/visual.md
+- docs/brand/voice.md
+- docs/specs/<feature>.md
+
+## Goal
+<one paragraph>
+
+## Done when
+- [ ] ...
+- [ ] ...
+
+## Out of scope
+- Do not modify production / live site
+- Do not ...
+
+## Notes
+<stream URL env var name, paths, constraints>
+```
 
 ---
 
-## Risks
+## 8. Site + apps scope
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Rebuilding without inventory | Break live stream or give links | Document current URLs/providers before cutover |
-| Player flakiness on mobile | Core listen loop fails | Test iOS Safari / Android Chrome early |
-| Prayer spam / abuse | Operator overload | Rate limits, honeypot, moderation queue |
-| Scope creep into “church OS” | Slow launch | Freeze v1 to listen · pray · give · find-us |
-| Brand mismatch during rebuild | Feels generic / off-mission | Match live site voice; brand-first hero |
+**Web (first):** full rewrite of the listener experience — listen, pray, give, find-us.  
 
----
+**Apps (later, same monorepo):**
 
-## Open decisions
+- PWA / installable web app before native  
+- Then iOS/Android only if directories + PWA are not enough  
+- Shared brand tokens and copy from `docs/brand/*` so agents don’t restyle each surface  
 
-1. **Is this a rebuild of `uncommonchristiannetwork.com` or a new companion app?**  
-2. **Who operates prayer requests today, and what tool should v1 deliver into?**  
-3. **Preferred giving platform** (keep current vs Stripe/Donorbox/etc.)?  
-4. **Private repo owner/name** — personal account vs UCN org; final slug?  
-5. **Content ownership** — who updates schedule and library week to week?
+Native apps get their own `docs/specs/ios.md` / `android.md` and prompts when you start them — still markdown-first, still fresh chats.
 
 ---
 
-## Suggested next step
+## 9. What stays untouched
 
-1. **You:** create the private GitHub repo for UCN (see table above).  
-2. **You:** start a new agent run on that private repo.  
-3. **Agent:** implement **Phase 0 + Phase 1** there (scaffold, live player, real schedule data).
+- Live site files, CMS, and hosting for current production  
+- DNS until cutover  
+- Existing stream ingestion / radio automation (consume the stream; don’t rebuild the station in v1)  
+- Existing donor accounts (link out or embed; don’t migrate money systems early)  
+
+---
+
+## 10. Open decisions
+
+1. **Private repo name/owner** (when you create it)  
+2. **Rebuild stack confirmation** — Next.js + TypeScript OK?  
+3. **Prayer delivery** — where should the new form send requests?  
+4. **Giving** — keep current checkout URLs?  
+5. **Cutover style** — big-bang DNS flip vs soft launch on a subdomain (`next.uncommonchristiannetwork.com`)?  
+
+---
+
+## 11. Suggested sequence (after private repo exists)
+
+1. Copy this `PLAN.md` into the private repo  
+2. Agent task: create docs skeleton + `AGENTS.md` only  
+3. You fill inventory + brand briefs (human; highest leverage)  
+4. Agent task: scaffold `apps/web` from `00-scaffold.md`  
+5. One feature per fresh agent run via `docs/prompts/*`  
+
+---
+
+## Bottom line
+
+- **Rewrite:** yes, fresh folders/files  
+- **Touch current site:** no  
+- **Organize with MD + Cursor agents:** yes — treat MD as prompts and memory  
+- **Erase chat context:** yes, intentionally — start clean and point at files  
+- **Graphics:** fix with `graphics-brief.md` + reference assets, not longer conversations  
+
+When the private repo is ready, start with Phase 0 docs only — no UI until brand and inventory MDs exist.
