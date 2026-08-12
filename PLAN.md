@@ -52,31 +52,28 @@ ucn/                          # private repo root
 │   │   ├── information-architecture.md
 │   │   └── cutover.md        # when/how to replace the live site
 │   ├── brand/
-│   │   ├── voice.md          # tone, words to use/avoid
-│   │   ├── visual.md         # colors, type, motion, layout rules
-│   │   ├── graphics-brief.md # how to generate images (see §6)
-│   │   └── references/       # logos, approved screenshots, mood refs
+│   │   ├── voice.md
+│   │   ├── visual.md           # tokens: color, type, space, radius
+│   │   ├── formatting.md       # layout rules — see §6
+│   │   ├── graphics-brief.md   # image generation rules — see §6
+│   │   ├── asset-slots.md      # every image slot: size, crop, path
+│   │   └── references/         # logo + 3–6 approved refs only
 │   ├── inventory/
-│   │   └── current-site.md   # what exists today (URLs, stream, give, apps)
-│   ├── specs/                # one feature = one spec
-│   │   ├── listen-player.md
-│   │   ├── prayer.md
-│   │   ├── give.md
-│   │   ├── schedule.md
-│   │   └── apps-directories.md
-│   └── prompts/              # copy-paste agent starter prompts
-│       ├── 00-scaffold.md
-│       ├── 01-listen-player.md
-│       ├── 02-prayer-form.md
-│       └── ...
+│   │   └── current-site.md
+│   ├── specs/
+│   ├── prompts/
+│   │   ├── 00-scaffold.md
+│   │   ├── gfx-01-hero.md      # one prompt = one graphic
+│   │   └── ...
+│   └── templates/              # starter MD copies (this PR includes samples)
 ├── apps/
-│   └── web/                  # new site (empty until scaffold)
-├── packages/                 # optional shared UI/tokens later
-└── .cursor/
-    └── rules/                # short always-on rules mirroring AGENTS.md
+│   └── web/
+│       ├── public/assets/      # final raster/SVG only — named by slot
+│       └── src/styles/tokens.css
+└── .cursor/rules/
 ```
 
-**Principle:** one job per MD. Agents implement specs; they do not invent product.
+**Principle:** one job per MD. Agents implement specs; they do not invent product or invent image styles.
 
 ---
 
@@ -142,34 +139,140 @@ Until Phase 6, the **current site stays exactly as it is**.
 
 ---
 
-## 6. Graphics & visual context (fix the pain point)
+## 6. Graphics & formatting (main pain point)
 
-Problem: agents generate random graphics because brand lives in chat, not files.
+Two different problems get mixed together. Split them on purpose.
 
-**Fix: brief files + references, not conversation memory.**
+| Problem | Fix in | Not fixed by |
+|---|---|---|
+| **Formatting** — type, spacing, alignment, responsive layout | CSS tokens + `formatting.md` + layout code | Generating more images |
+| **Graphics** — hero photos, atmosphere, icons-as-art | `graphics-brief.md` + `asset-slots.md` + one-slot prompts | Longer chat context |
 
-### `docs/brand/graphics-brief.md` should define
+**Rule:** most of the site should be **type + layout + one real image**. If formatting feels broken, do not ask for new graphics — fix tokens and structure.
 
-- Purpose of each image (hero atmosphere, prayer, radio, give — not decorative noise)  
-- Style: photography vs illustration, lighting, color limits  
-- Hard bans (generic stock church clichés, purple AI glow, emoji, etc. if you don’t want them)  
-- Aspect ratios needed (hero 16:9, app icons, OG share image)  
-- “Must include / must not include” checklist  
+---
 
-### `docs/brand/references/`
+### 6A. Formatting system (do this before generating art)
 
-- Logo SVG/PNG  
-- 3–6 approved stills or screenshots from the current site  
-- Optional mood references  
+Put all layout truth in code-facing docs so every agent uses the same grid.
 
-### Agent pattern for images
+**`docs/brand/visual.md` → becomes `tokens.css`**
 
-1. Fresh chat  
-2. Prompt: “Read `docs/brand/graphics-brief.md` and `docs/brand/visual.md`. Generate only the asset listed in section X. Save to `apps/web/public/...`.”  
-3. Attach reference images from `docs/brand/references/` when the tool supports it  
-4. Accept or reject; if reject, **edit the brief**, don’t argue in chat  
+- Color: background, surface, text, muted, accent (2–3 accents max)  
+- Type: one display font + one body font (no Inter/Roboto/Arial defaults)  
+- Scale: steps for H1 / H2 / body / small — with mobile sizes  
+- Space: 4/8/16/24/40/64 scale only  
+- Radius / borders: pick one language and stick to it  
 
-For layout/UI, prefer **code + CSS tokens** over generated marketing collage art. Use generated imagery only where the brief says a real visual anchor is required.
+**`docs/brand/formatting.md` rules (non-negotiable for agents)**
+
+1. **One composition per first viewport** — brand, one headline, one support line, one CTA group, one full-bleed visual. Nothing else.  
+2. **No cards in the hero.** Cards only when they wrap a real interaction.  
+3. **One job per section** — one headline + one short support sentence.  
+4. **Text is HTML/CSS, never baked into generated images** (except logo). AI text-in-image is the #1 formatting failure.  
+5. **Image is background or full-bleed plane** — not a rounded inset thumbnail in the hero.  
+6. **Fixed content widths** — e.g. measure ~36–42rem for prose; full-bleed only for media.  
+7. **Mobile first** — stack; do not shrink desktop chrome.  
+8. **No competing chrome** — no pill clusters, stat strips, floating badges on media.  
+
+**Agent pattern for formatting (fresh chat)**
+
+> Read `docs/brand/visual.md` and `docs/brand/formatting.md`.  
+> Implement layout for `<section>` only.  
+> Do not generate images.  
+> Use tokens from `tokens.css`. Commit.
+
+---
+
+### 6B. Graphics system (slot-based, not “make it pretty”)
+
+Never ask an agent: “make graphics for the site.”  
+Always ask: “generate **slot `hero-home`** per `asset-slots.md`.”
+
+**`docs/brand/asset-slots.md` — one row per image**
+
+| Slot ID | Page | Role | Aspect | Size | Path | Status |
+|---|---|---|---|---|---|---|
+| `hero-home` | Home | Full-bleed atmosphere | 16:9 | 2400×1350 | `public/assets/hero-home.webp` | todo |
+| `og-default` | Share | Open Graph | 1.91:1 | 1200×630 | `public/assets/og-default.jpg` | todo |
+| `pray-atmosphere` | Pray | Section visual | 4:3 | 1600×1200 | `public/assets/pray-atmosphere.webp` | todo |
+
+Only slots that exist in this table may be generated. No orphan images.
+
+**`docs/brand/graphics-brief.md` — global image rules**
+
+- Medium: e.g. cinematic photography / restrained editorial (pick one; lock it)  
+- Palette must match `visual.md`  
+- Subject: radio / voice / night sky / road / hands in prayer — concrete, not abstract purple fog  
+- **No text, no logos, no watermarks, no UI mockups inside the image**  
+- **No** generic glowing crosses, stock megachurch stages, or random AI “worship concert” looks unless you explicitly want them  
+- Lighting / grain / depth of field notes  
+- Safe crop zones (faces/subjects not in the vertical center band if text will overlay)  
+
+**`docs/brand/references/`**
+
+- Official logo only  
+- 3–6 stills you personally approve (screenshots of current site or photos you own)  
+- Agents must attach these as references when generating  
+
+**One graphic = one prompt file** (`docs/prompts/gfx-01-hero-home.md`)
+
+```markdown
+# Task: Generate slot hero-home
+
+## Read first
+- docs/brand/graphics-brief.md
+- docs/brand/asset-slots.md (row: hero-home)
+- docs/brand/visual.md
+
+## Attach
+- docs/brand/references/* (as image refs)
+
+## Do
+1. Generate exactly one image for slot hero-home
+2. Match aspect and intent in asset-slots.md
+3. No text in the image
+4. Save to the path in asset-slots.md
+5. Update Status column to done
+
+## Out of scope
+- Do not redesign the page
+- Do not generate other slots
+```
+
+**Accept / reject loop**
+
+- Reject → edit `graphics-brief.md` or the slot row → new fresh chat  
+- Do not pile “make it more X” into a long thread; the brief should change  
+
+---
+
+### 6C. What usually breaks (and the fix)
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Text looks wrong on the image | Text was generated inside the PNG | Overlay HTML text on a text-free photo |
+| Every page looks different | No tokens / each agent invents CSS | Lock `tokens.css`; ban new colors in prompts |
+| Hero feels cluttered | Too many elements + inset image | Enforce formatting.md hero budget |
+| Images don’t crop well on mobile | Wrong aspect / subject centered | Define safe crop in slot row; generate 16:9 and crop with CSS `object-position` |
+| “AI slop” look | Vague prompts, no references | Hard bans + 3–6 reference images |
+| Inconsistent icons | Mixing generated icons + emoji + lucide randomly | Pick one icon set in code; don’t generate icons as art unless listed as a slot |
+
+---
+
+### 6D. Phase 0 addition for this pain point
+
+Before any UI scaffold graphics:
+
+- [ ] Fill `visual.md` + `formatting.md` (even draft tokens)  
+- [ ] Fill `graphics-brief.md` with hard bans  
+- [ ] Create `asset-slots.md` with **only** the images v1 actually needs (aim for ≤6)  
+- [ ] Drop logo + references into `references/`  
+- [ ] Write one `gfx-*.md` prompt per slot  
+
+**v1 graphic budget (suggestion):** home hero, pray section, give/support atmosphere, default OG image, optional app icon. Everything else = CSS and type.
+
+Starter templates for these files live under `docs/templates/` in this PR — copy them into the private UCN repo and fill in.
 
 ---
 
@@ -260,6 +363,7 @@ Native apps get their own `docs/specs/ios.md` / `android.md` and prompts when yo
 - **Touch current site:** no  
 - **Organize with MD + Cursor agents:** yes — treat MD as prompts and memory  
 - **Erase chat context:** yes, intentionally — start clean and point at files  
-- **Graphics:** fix with `graphics-brief.md` + reference assets, not longer conversations  
+- **Formatting:** CSS tokens + `formatting.md` — not more images  
+- **Graphics:** slot table + brief + one prompt per image — never “make the site look better”  
 
-When the private repo is ready, start with Phase 0 docs only — no UI until brand and inventory MDs exist.
+When the private repo is ready: Phase 0 docs first, especially brand/formatting/graphics templates, then scaffold UI.
